@@ -10,38 +10,28 @@ function clockUnion(clockMap, docId, clock) {
   return clockMap.set(docId, clock);
 }
 
-export interface AsyncDocSet {
+export interface AsyncDocStore {
   getDoc<T>(docId: string): Promise<Doc<T>>;
   setDoc<T>(docId: string, doc: Doc<T>): Promise<Doc<T>>;
 }
 
 // Keeps track of the communication with one particular peer. Allows updates
 // for many documents to be multiplexed over a single connection.
-export default class Connection {
-  private _docSet: AsyncDocSet;
+export class Connection {
+  private _docSet: AsyncDocStore;
   private _sendMsg: (msg: Message) => void;
   private _theirClock: Map<string, any>;
   private _ourClock: Map<string, any>;
 
-  constructor(docSet: AsyncDocSet, sendMsg: (msg: Message) => void) {
+  constructor(docSet: AsyncDocStore, sendMsg: (msg: Message) => void) {
     this._docSet = docSet;
     this._sendMsg = sendMsg;
     this._theirClock = Map();
     this._ourClock = Map();
   }
 
-  sendMsg(docId: string, clock: Map<string, any>, changes?: Change[]) {
-    const msg: Message = {
-      docId,
-      clock: clock.toJS() as { [key: string]: any }
-    };
-    this._ourClock = clockUnion(this._ourClock, docId, clock);
-    if (changes) msg.changes = changes;
-    this._sendMsg(msg);
-  }
-
   // You must call this manually to send changes.
-  docChanged(docId: string, doc: Doc<any>) {
+  async docChanged(docId: string, doc: Doc<any>) {
     const state = Frontend.getBackendState(doc);
     const clock = state.getIn(["opSet", "clock"]);
     if (!clock) {
@@ -55,23 +45,7 @@ export default class Connection {
       throw new RangeError("Cannot pass an old state object to a connection");
     }
 
-    this.maybeSendChanges(docId);
-  }
-
-  async applyChanges(docId: string, changes: Change[]): Promise<Doc<any>> {
-    let doc =
-      (await this._docSet.getDoc(docId)) ||
-      // @ts-ignore because automerge has bad typings
-      Frontend.init({ backend: Backend });
-
-    const oldState = Frontend.getBackendState(doc);
-    const [newState, patch] = Backend.applyChanges(oldState, changes);
-
-    // @ts-ignore because automerge has bad typings
-    patch.state = newState;
-    doc = Frontend.applyPatch(doc, patch);
-    await this._docSet.setDoc(docId, doc);
-    return doc;
+    await this.maybeSendChanges(docId);
   }
 
   async receiveMsg(msg: Message) {
@@ -95,6 +69,35 @@ export default class Connection {
     }
 
     return this._docSet.getDoc(msg.docId);
+  }
+
+  private async applyChanges(
+    docId: string,
+    changes: Change[]
+  ): Promise<Doc<any>> {
+    let doc =
+      (await this._docSet.getDoc(docId)) ||
+      // @ts-ignore because automerge has bad typings
+      Frontend.init({ backend: Backend });
+
+    const oldState = Frontend.getBackendState(doc);
+    const [newState, patch] = Backend.applyChanges(oldState, changes);
+
+    // @ts-ignore because automerge has bad typings
+    patch.state = newState;
+    doc = Frontend.applyPatch(doc, patch);
+    await this._docSet.setDoc(docId, doc);
+    return doc;
+  }
+
+  private sendMsg(docId: string, clock: Map<string, any>, changes?: Change[]) {
+    const msg: Message = {
+      docId,
+      clock: clock.toJS() as { [key: string]: any }
+    };
+    this._ourClock = clockUnion(this._ourClock, docId, clock);
+    if (changes) msg.changes = changes;
+    this._sendMsg(msg);
   }
 
   private async maybeSendChanges(docId: string) {

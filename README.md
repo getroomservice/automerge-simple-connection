@@ -2,11 +2,13 @@
 
 This is a simpler, asynchronous, version of Automerge's [Connection](https://github.com/automerge/automerge/blob/master/src/connection.js) protocol, which is used to send and receive changes to Automerge documents.
 
-Unlike the original Automerge Connection, _simple_ connection:
+Unlike the original Automerge Connection, this connection:
 
-- Doesn't use hard-to-debug handlers
 - Supports asynchronous getting and setting documents however you want
+- Doesn't use hard-to-debug handlers
 - Is written in Typescript
+
+Plus, this connector is interoperable with a peer who's using the original.
 
 ## Install
 
@@ -16,7 +18,9 @@ npm install --save automerge-simple-connection
 
 ## Usage
 
-Async Automerge Connection assumes you're implementing an `DocStore` class that satisfies this interface:
+### Setting up a Doc Store
+
+Async Automerge Connection assumes you're implementing an `AsyncDocStore` class that satisfies this interface:
 
 ```ts
 interface AsyncDocStore {
@@ -25,7 +29,7 @@ interface AsyncDocStore {
 }
 ```
 
-An in-memory example might just be:
+An in-memory example of such a store might just be:
 
 ```ts
 import { AsyncDocStore } from "automerge-simple-connection";
@@ -44,7 +48,9 @@ class MyDocStore extends AsyncDocStore {
 }
 ```
 
-Then, you'd create a `sendMsg` function that sends a generated packet over the network. For example:
+### Setting up a sendMsg function
+
+Then, you'll create a `sendMsg` function that takes a message and sends it over the network however you want. For example:
 
 ```ts
 function sendMsg(msg) {
@@ -52,7 +58,9 @@ function sendMsg(msg) {
 }
 ```
 
-Finally, you'd create a `Connection` class and pass both your `DocStore` and your `sendMsg` function in.
+### Creating a connection
+
+Finally, you'd create a `Connection` class and pass both your `AsyncDocStore` and your `sendMsg` function in.
 
 ```ts
 import { Connection } from "automerge-simple-connection";
@@ -67,3 +75,9 @@ To let other clients know a document changed, just call the `docChanged` functio
 ```ts
 connection.docChanged(myDocId, myDoc);
 ```
+
+## Why?
+
+The goal of this library is to decouple Automerge Connection from DocSet, so you don't have to load every document into memory. That makes it easier to run a peer that offloads documents into a cache or database.
+
+Because it doesn't use DocSets, it also doesn't use the handler pattern the original Automerge Connection uses. That makes debugging a lot easier since there's less "magic" about when things are sent across the wire.
