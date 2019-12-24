@@ -1,12 +1,17 @@
 {
   "name": "automerge-simple-connection",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "author": "Evan Conrad",
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "prepublish": "tsc"
   },
+  "files": [
+    "/dist"
+  ],
   "peerDependencies": {
     "automerge": "^0.12.1",
     "immutable": "^4.0.0-rc.12"
@@ -18,5 +23,6 @@
     "jest": "^24.9.0",
     "ts-jest": "^24.2.0",
     "typescript": "^3.7.4"
-  }
+  },
+  "types": "dist/index.d.ts"
 }
