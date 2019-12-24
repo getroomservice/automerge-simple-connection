@@ -1,6 +1,6 @@
 # Automerge Simple Connection
 
-This is a simpler, asynchronous, version of Automerge's [Connection](https://github.com/automerge/automerge/blob/master/src/connection.js) protocol, which is used to send and receive changes to Automerge documents.
+This is a simpler, explicit, and asynchronous version of Automerge's [Connection](https://github.com/automerge/automerge/blob/master/src/connection.js) protocol, which is used to send and receive changes to Automerge documents.
 
 Unlike the original Automerge Connection, this connection:
 
