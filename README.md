@@ -76,6 +76,24 @@ To let other clients know a document changed, just call the `docChanged` functio
 connection.docChanged(myDocId, myDoc);
 ```
 
+### Receiving changes
+
+When you've received a message over the wire (like one you might have sent from your `sendMsg` function), you should call `receiveMsg` like so:
+
+```ts
+myNetwork.on("got_message", msg => {
+  connection.receiveMsg(msg);
+});
+```
+
+This will update the document store as needed. If you need to wait for that to complete, the function is asynchronous:
+
+```ts
+myNetwork.on("got_message", async msg => {
+  await connection.receiveMsg(msg);
+});
+```
+
 ## Why?
 
 The goal of this library is to decouple Automerge Connection from DocSet, so you don't have to load every document into memory. That makes it easier to run a peer that offloads documents into a cache or database.
