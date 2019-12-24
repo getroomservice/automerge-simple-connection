@@ -1,0 +1,13 @@
+{
+  "name": "automerge-async-connection",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc"
+  },
+  "peerDependencies": {
+    "automerge": "^0.12.1",
+    "immutable": "^4.0.0-rc.12"
+  }
+}
